@@ -1,4 +1,3 @@
-
 class BoardAnalyser():
 
     def __init__(self):
@@ -17,6 +16,20 @@ class BoardAnalyser():
         self.goal = input();
 
         return True;
+
+    def getChar(self, pos):
+    	pos_y = pos[0];
+    	pos_x = pos[1];
+    	o = self.board[pos_x][pos_y];
+
+    	object_dict = {
+    		"X" : "conner",
+    		"O" : "white",
+    		"@" : "black",
+    		"-" : "space",
+    	}
+
+    	return o;
 
     # Returns all coordinates of CHAR
     def getPosOfChar(self, char, boardSize = 8):
@@ -38,6 +51,8 @@ class BoardAnalyser():
 
     def countDirectMoves(self, dots):
 
+        moves = 0;
+
         if (len(dots) == 0):
             return 0;
 
@@ -47,14 +62,21 @@ class BoardAnalyser():
             row = dot[1];
 
             # col + 1
-            
-
+            if (self.getChar((col+1, row)) == '-'):
+                moves += 1;
             # col - 1
-
+            if (self.getChar((col-1, row)) == '-'):
+                moves += 1;
             # row + 1
-
+            if (self.getChar((col, row+1)) == '-'):
+                moves += 1;
             # row - 1
+            if (self.getChar((col, row-1)) == '-'):
+                moves += 1;
 
+        return moves;
+
+    def count
 
 if __name__ == '__main__':
 
@@ -62,5 +84,8 @@ if __name__ == '__main__':
     ba.formatInput();
     # blackDots = ba.getPosOfChar('@');
     whiteDots = ba.getPosOfChar('O')
+    moves = 0
+    if whiteDots != None:
+        moves += ba.countDirectMoves(whiteDots);
 
-    ba.countDirectMoves(whiteDots);
+    print(moves)
