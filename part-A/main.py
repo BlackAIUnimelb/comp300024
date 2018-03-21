@@ -18,18 +18,22 @@ class BoardAnalyser():
         return True;
 
     def getChar(self, pos):
-    	pos_y = pos[0];
-    	pos_x = pos[1];
-    	o = self.board[pos_x][pos_y];
 
-    	object_dict = {
-    		"X" : "conner",
-    		"O" : "white",
-    		"@" : "black",
-    		"-" : "space",
-    	}
+        if (pos[0] > 7 or pos[1] > 7 or pos[0] < 0 or pos[1] < 0):
+            return '';
 
-    	return o;
+        pos_y = pos[0];
+        pos_x = pos[1];
+        o = self.board[pos_x][pos_y];
+
+        object_dict = {
+        	"X" : "conner",
+        	"O" : "white",
+        	"@" : "black",
+        	"-" : "space",
+        }
+
+        return o;
 
     # Returns all coordinates of CHAR
     def getPosOfChar(self, char, boardSize = 8):
@@ -49,43 +53,66 @@ class BoardAnalyser():
 
         return resultPos;
 
-    def countDirectMoves(self, dots):
+    def countMoves(self, dots):
 
-        moves = 0;
+        total_moves = 0;
 
         if (len(dots) == 0):
             return 0;
 
+        # Counts direct moves
         for dot in dots:
 
             col = dot[0];
             row = dot[1];
-
             # col + 1
-            if (self.getChar((col+1, row)) == '-'):
-                moves += 1;
             # col - 1
-            if (self.getChar((col-1, row)) == '-'):
-                moves += 1;
             # row + 1
-            if (self.getChar((col, row+1)) == '-'):
-                moves += 1;
             # row - 1
-            if (self.getChar((col, row-1)) == '-'):
-                moves += 1;
+            directDots = [(col+1, row), (col-1, row), (col, row+1), (col, row-1)];
 
-        return moves;
+            for i in range(0, 4):
 
-    def count
+                if (self.getChar(directDots[i]) == '-'):
+                    total_moves += 1;
+
+                if (self.getChar(directDots[i]) == 'O' or self.getChar(directDots[i]) == '@'):
+
+                    ccol = directDots[i][0];
+                    rrow = directDots[i][1];
+
+                    # Up
+                    if (i == 0 and self.getChar((ccol + 1, rrow)) == '-'):
+                        total_moves += 1;
+                        continue;
+
+                    # Down
+                    if (i == 1 and self.getChar((ccol - 1, rrow)) == '-'):
+                        total_moves += 1;
+                        continue;
+
+                    # Right
+                    if (i == 2 and self.getChar((ccol, rrow + 1)) == '-'):
+                        total_moves += 1;
+                        continue;
+
+                    # Left
+                    if (i == 3 and self.getChar((ccol, rrow - 1)) == '-'):
+                        total_moves += 1;
+                        continue;
+
+        return total_moves;
+
+    def printWBMoves(self):
+
+        whiteDots = self.getPosOfChar('O');
+        blackDots = self.getPosOfChar('@');
+        print(self.countMoves(whiteDots));
+        print(self.countMoves(blackDots));
+
 
 if __name__ == '__main__':
 
     ba = BoardAnalyser();
     ba.formatInput();
-    # blackDots = ba.getPosOfChar('@');
-    whiteDots = ba.getPosOfChar('O')
-    moves = 0
-    if whiteDots != None:
-        moves += ba.countDirectMoves(whiteDots);
-
-    print(moves)
+    ba.printWBMoves();
