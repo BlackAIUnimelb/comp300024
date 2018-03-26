@@ -1,3 +1,5 @@
+from queue import PriorityQueue
+
 class BoardAnalyser():
 
     def __init__(self):
