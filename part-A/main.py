@@ -111,6 +111,26 @@ class BoardAnalyser():
         print(self.countMoves(blackDots));
 
 
+    def sortBlackDotsList(self, blackDots, whiteDots):
+        pq = PriorityQueue();
+        for blackDot in blackDots:
+            priority = self.whiteDotsToABlackDot(blackDot, whiteDots);
+            pq.put([priority, blackDot]);
+        return pq; #黑棋被eliminate的顺序
+
+    def whiteDotsToABlackDot(self, blackDot, whiteDots):
+        if (len(whiteDots) == 0):
+            return -1;
+
+        sumdist = 0
+        for whiteDot in whiteDots:
+            colW = whiteDot[0];
+            rowW = whiteDot[1];
+
+            sumdist += abs(colW - blackDot[0]) + abs(rowW - blackDot[1]);
+        return sumdist;
+
+
 if __name__ == '__main__':
 
     ba = BoardAnalyser();
