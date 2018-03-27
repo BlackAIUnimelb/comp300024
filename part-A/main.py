@@ -166,7 +166,7 @@ class StatePieces(State):
 
     def GetDist(self):
         #priority
-        if (self.value[0] == self.goal[0] and self.value[1] == self.goal[1]):   
+        if (self.value[0] == self.goal[0] and self.value[1] == self.goal[1]):
             return 0
         dist = abs(self.value[0] - self.goal[0]) + abs(self.value[1] - self.goal[1])
         return dist
@@ -251,8 +251,8 @@ if __name__ == '__main__':
     ba.formatInput();
     ba.printWBMoves();
 
-    start = (2, 6)       #a white piece position
-    goal = (3, 3)        #一个指定黑棋 周围的某个点
+    start = (4,3)       #a white piece position
+    goal = (6,3)        #一个指定黑棋 周围的某个点
     a = AStar_Solver(start, goal, copy.deepcopy(ba.board))
     a.Solve()
     for i in range(len(a.path)):
