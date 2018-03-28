@@ -134,7 +134,6 @@ class BoardAnalyser():
         return sumdist;
 
 
-
 class State(object):
     def __init__(self, value, parent, start = 0, goal = 0):
         self.children = []
@@ -198,10 +197,10 @@ class StatePieces(State):
                 # 再下一个点   考虑跳的情况
                 newNextCol = newCol + direction[i][0]
                 newNextRow = newRow + direction[i][1]
-                if ((theChar in ['O','@']) and (newNextCol > 7 or newNextCol < 0 or newNextRow > 7 or newNextRow < 0)):
+                if ((theChar in ['O','@','X']) and (newNextCol > 7 or newNextCol < 0 or newNextRow > 7 or newNextRow < 0)):
                     continue
                 theNextChar = self.environ[newNextCol][newNextRow]
-                if ((theChar in ['O','@']) and theNextChar in ['O','@']):
+                if ((theChar in ['O','@','X']) and theNextChar in ['O','@','X']):
                     continue
                 if ((theChar in ['O','@']) and theNextChar == '-'):
                     val = (newNextCol, newNextRow)
@@ -251,8 +250,8 @@ if __name__ == '__main__':
     ba.formatInput();
     ba.printWBMoves();
 
-    start = (2, 6)       #a white piece position
-    goal = (3, 3)        #一个指定黑棋 周围的某个点
+    start = (1, 7)       #a white piece position
+    goal = (7, 1)        #一个指定黑棋 周围的某个点
     a = AStar_Solver(start, goal, copy.deepcopy(ba.board))
     a.Solve()
     for i in range(len(a.path)):
