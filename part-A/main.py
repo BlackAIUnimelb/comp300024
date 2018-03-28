@@ -443,6 +443,18 @@ class DotEliminator():
         allDots = []
         # print("start: {}".format(pos))
 
+        #===============================================
+        #alan 
+        tmpPQ = PriorityQueue()
+        for whiteDot in whiteDots:
+        	start = whiteDot
+        	goal = pos
+        	a = AStar_Solver(start, goal, ba.board)
+        	a.Solve()
+        	dist = len(a.path)
+        	tmpPQ.put([dist, whiteDot])
+        #===============================================
+
         while True:
 
             if expandIndex == max(7-pos[0], 7-pos[1]):
