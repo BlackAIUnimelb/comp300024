@@ -11,7 +11,7 @@ Let's assume n = board size, m = the number of pieces one play has, n >> m
 2. We need 4*m units to try four direction for each piece
 3. Since n >> m, therefore:
 Space complexity: O(n + 4*m) = O(n), where n is the board size
-
+ 
 For calculating the sequence of moves to eliminate all enemy pieces, how have you
 modelled the problem as a search problem? What search algorithm does your
 program use? If applicable, what is the branching factor of your search tree? What is
@@ -27,13 +27,13 @@ Path finding
 
 # Step1: Find all black pieces that can be eliminated (Means we can put this )
 
-# Step2: Sort valid black pieces based on nearby whiteDots (The blackdot has the most and the closest whiteDots to be put the first)
+# Step2: Sort valid black pieces based on nearby whitePieces (The blackPiece has the most and the closest whitePieces to be put the first)
 
-    #1.1: First Priority:  if there is a whiteDot at the pair position
-    #     Second Priority: Nearby closest whiteDots
+    #1.1: First Priority:  if there is a whitePiece at the pair position
+    #     Second Priority: Nearby closest whitePieces
     #     Third Priority:  Might be added in the future
 
-# Step3: Try to eliminate the target blackDot and update the board and priorityQueue after its been eliminated
+# Step3: Try to eliminate the target blackPiece and update the board and priorityQueue after its been eliminated
 
 # Step4: Re-scan the board and jump to step1 until no black pieces can be eliminated anymore
 
@@ -41,12 +41,12 @@ Path finding
 we have modeled it as a search problem in the following way: 
 	Firstly, we build a function that finds shortest path between two given positions on the board. Here, we have used greedy search.
 
-	Secondly for a given black dot, we need to find two white dots to eliminate it. In order to find two white dots that take least steps to the black dot, we have used the function that is mentioned above.
+	Secondly for a given black piece, we need to find two white pieces to eliminate it. In order to find two white pieces that take least steps to the black piece, we have used the function that is mentioned above.
 
 
-branching factor is 4 because for a give position, it can have 4 possible children (child nodes). 
+Branching factor is 4 because for a give position, it can have 4 possible children (child nodes). 
 
-maximum search depth is 38 (=64 - 4 - 24) because for a worst scenario, a dot might move every possible empty position until it gets to the destination. 
+Maximum search depth is n, where n is the number of empty positions on the board, because for a worst scenario, a piece might move every possible empty position until it gets to the destination. 
 
 
-Our algorithm does not always return the shortest path 
+Our algorithm does not always return the shortest sequence of moves
