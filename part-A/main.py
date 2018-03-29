@@ -45,11 +45,18 @@ def drawPath(board, path):
     outputBoard(copyBoard)
 
 
+def outputPath(path):
+
+    for i in range(1, len(path)):
+
+        print("{} -> {}".format(path[i-1], path[i]));
+
+
 class BoardAnalyser():
 
     def __init__(self):
         self.board = None;
-        self.goal = None;
+        self.command = None;
         self.chars = ['-', 'X', 'O', '@'];
 
     def formatInput(self):
@@ -69,7 +76,7 @@ class BoardAnalyser():
 
         self.board = result
 
-        self.goal = input();
+        self.command = input();
 
         return True;
 
@@ -527,9 +534,9 @@ class DotEliminator():
                 self.totalCost += len(path)
                 # Update board
                 self.updateBoard(pair[index], dotPos);
-                print(path)
-                drawPath(self.boardAnalyser.board, path);
-                outputBoard(self.boardAnalyser.board)
+                outputPath(path)
+                # drawPath(self.boardAnalyser.board, path);
+                # outputBoard(self.boardAnalyser.board)
                 index += 1
 
             return True;
@@ -541,37 +548,18 @@ if __name__ == '__main__':
 
     ba = BoardAnalyser();
     ba.formatInput();
-    ba.printWBMoves();
 
-    # start = (0, 3)       #a white piece position
-    # goal = (2, 5)        #一个指定黑棋 周围的某个点
-    # a = AStar_Solver(start, goal, copy.deepcopy(ba.board))
-    # a.Solve()
-    # for i in range(len(a.path)):
-    #     print(a.path[i])
-    #
-    # exit();
-    # print("{} {}".format(ba.getChar((2, 2)), ba.getChar((2, 4))));
+    if ba.command == 'Moves':
+        ba.printWBMoves();
+    # execute Massacre
+    elif ba.command == 'Massacre':
 
-    # print(ba.getPosOfChar("@"))
-    bEliminator = DotEliminator("O", ba.getPosOfChar("@"), ba)
-    count = 0
-    while len(bEliminator.getCanEliminateDotPairs()) > 0:
+        bEliminator = DotEliminator("O", ba.getPosOfChar("@"), ba)
+        while len(bEliminator.getCanEliminateDotPairs()) > 0:
 
-        bEliminator.findNearByDots();
-        bEliminator.execKilling();
+            bEliminator.findNearByDots();
+            bEliminator.execKilling();
 
-        for dot in ba.getPosOfChar("@"):
-            bEliminator.checkDotNeedRemove(dot);
-
-        # if count == 0:
-        #     break
-        # count += 1
-
-        # outputBoard(bEliminator.boardAnalyser.board)
-
-        print("Total costs: {}".format(bEliminator.totalCost));
-
-
-    # drawPath(ba.board, a.path)
+            for dot in ba.getPosOfChar("@"):
+                bEliminator.checkDotNeedRemove(dot);
 
