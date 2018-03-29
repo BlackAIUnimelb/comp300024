@@ -12,6 +12,8 @@ def outputBoard(board):
 
         print()
 
+    print()
+
 def drawPath(board, path):
 
     if (len(path) == 0):
@@ -37,7 +39,7 @@ def drawPath(board, path):
         else:
             symbol = '→'
 
-        print(path[i+1], symbol)
+        # print(path[i+1], symbol)
 
         copyBoard[path[i+1][0]][path[i+1][1]] = symbol
 
@@ -320,11 +322,13 @@ class DotEliminator():
         self.eliminateDotType = '@'
         self.direction = [(0, -1), (0, 1), (-1, 0), (1, 0)]  #上下左右
         self.diagonal = [(-1, -1), (-1, 1), (-1, 1), (1, 1)]
+        self.usedDots = [];
+        self.totalCost = 0;
 
         # Item format:( weight, [target position], (blackDot position) )
         # Weight = (distance of nearby 2 whiteDots) - (existed number of whiteDot within pair)*K
         # k = 1 (preset)
-        self.priorityQueue = PriorityQueue()
+        self.priorityQueue = PriorityQueue();
 
     def printBlackDots(self):
 
@@ -389,53 +393,58 @@ class DotEliminator():
 
             for pair in pairData:
 
-                print(pair)
-
                 weight = 0;
                 # [(1st expandPos, path), (2nd expandPos, path)]
                 foundPos = []
-
                 # Each can eliminate pair coordinates
                 if pair[0] == 1:
 
                     pos = pair[1][0];
+                    takenPos = pair[1][1]
                     # DotType already took this position
-                    takenPos = pair[1][1];
                     expandResult = self.expandCheckNearby(pos, takenPos);
 
                     if (expandResult != None):
 
-                        foundPos.append(expandResult);
-                        pathLength = len(expandResult[1])
+                        # Records dot position and path
+                        foundPos.append(expandResult[1:]);
+                        pathLength = expandResult[0]
                         weight += pathLength;
 
                 elif pair[0] == 2:
 
+                    takenPos = ();
                     # Checks the first position within pair
                     pos1 = pair[1][0];
-                    expandResult = self.expandCheckNearby(pos1);
+                    expandResult1 = self.expandCheckNearby(pos1);
 
-                    if (expandResult != None):
+                    if (expandResult1 != None):
 
-                        foundPos.append(expandResult);
-                        pathLength = len(expandResult[1])
+                        foundPos.append(expandResult1[1:]);
+                        pathLength = expandResult1[0]
                         weight += pathLength;
+
+                        takenPos = expandResult1[1]
 
                     # Checks the second position within pair
                     pos2 = pair[1][1];
-                    expandResult = self.expandCheckNearby(pos2);
+                    expandResult2 = self.expandCheckNearby(pos2, takenPos);
 
-                    if (expandResult != None):
+                    if (expandResult1 != None and expandResult2 != None):
 
-                        foundPos.append(expandResult);
-                        pathLength = len(expandResult[1])
+                        foundPos.append(expandResult2[1:]);
+                        pathLength = expandResult2[0]
                         weight += pathLength;
+                    else:
+                        continue;
 
                 if weight != 0:
+                    # pair[1] are (two pairs)
+                    # print("put ->{}".format([weight, foundPos, pair[1]]))
                     self.priorityQueue.put([weight, foundPos, pair[1]])
 
     # return coordinates of dotType that has the shortest distance to the target position
-    def expandCheckNearby(self, pos, takenPos=None):
+    def expandCheckNearby(self, pos, takenPos = None):
 
         # print(pos)
         expandPos = pos;
@@ -443,65 +452,106 @@ class DotEliminator():
         allDots = []
         # print("start: {}".format(pos))
 
-        #===============================================
-        #alan 
-        tmpPQ = PriorityQueue()
-        for whiteDot in whiteDots:
-        	start = whiteDot
-        	goal = pos
-        	a = AStar_Solver(start, goal, ba.board)
-        	a.Solve()
-        	dist = len(a.path)
-        	tmpPQ.put([dist, whiteDot])
-        #===============================================
+        pQueue = PriorityQueue();
 
-        while True:
 
-            if expandIndex == max(7-pos[0], 7-pos[1]):
-                break
+        allDotTypeDots = self.boardAnalyser.getPosOfChar(self.dotType);
+
+        for dot in allDotTypeDots:
+
+            if dot != takenPos:
+                a = AStar_Solver(dot, pos, ba.board)
+                a.Solve()
+                pQueue.put([len(a.path), dot, a.path]);
+
+        if pQueue.qsize():
+
+            nearestDot = pQueue.get();
+            # print("nearest -> {}".format(nearestDot[1]))
+            # print(nearestDot)
+            # self.usedDots.append(nearestDot[1]);
+
+            return nearestDot;
+
+        # Couldn't find any nearby piece
+        return None;
+
+        # stack = [];
+        # visited = [];
+        #
+        # visited.append(pos);
+        # stack.append(pos);
+        #
+        # while len(stack) > 0:
+        #
+        #     # if expandIndex == max(7-pos[0], 7-pos[1]):
+        #     #     break
+        #     if len(stack) == 0:
+        #         break
+        #
+        #     for i in range(0, 4):
+        #
+        #         newCol = stack[0][0] + self.direction[i][0] * expandIndex;
+        #         newRow = stack[0][1] + self.direction[i][1] * expandIndex;
+        #
+        #         expandPos = (newCol, newRow);
+        #
+        #         if expandPos in visited:
+        #             continue;
+        #         else:
+        #             stack.append(expandPos)
+        #
+        #         stack.pop(0)
+        #
+        #         if (self.boardAnalyser.getChar(expandPos) == self.dotType) and takenPos != expandPos:
+        #             # print("Try direct: {}".format(expandPos))
+        #             a = AStar_Solver(expandPos, pos, ba.board)
+        #             a.Solve()
+        #             # print("Try -> {}".format(expandPos))
+        #             if (len(a.path) == 0):
+        #                 continue;
+        #             # drawPath(ba.board, a.path)
+        #             return (expandPos, a.path);
 
             # Direct check 4 direction
-            for i in range(0, 4):
+            # for i in range(0, 4):
+            #
+            #     newCol = pos[0] + self.direction[i][0] * expandIndex;
+            #     newRow = pos[1] + self.direction[i][1] * expandIndex;
+            #
+            #     expandPos = (newCol, newRow);
+            #
+            #     if (self.boardAnalyser.getChar(expandPos) == self.dotType) and takenPos != expandPos:
+            #         # print("Try direct: {}".format(expandPos))
+            #         a = AStar_Solver(expandPos, pos, ba.board)
+            #         a.Solve()
+            #         # print("Try -> {}".format(expandPos))
+            #         if (len(a.path) == 0):
+            #             continue;
+            #         # drawPath(ba.board, a.path)
+            #         return (expandPos, a.path);
+            #
+            # # Diagonal check 4 direction
+            # for i in range(0, 4):
+            #
+            #     newCol = pos[0] + self.diagonal[i][0] * expandIndex;
+            #     newRow = pos[1] + self.diagonal[i][1] * expandIndex;
+            #
+            #     expandPos = (newCol, newRow);
+            #
+            #     if (self.boardAnalyser.getChar(expandPos) == self.dotType) and takenPos != expandPos:
+            #         # print("Try Diagonal: {}".format(expandPos))
+            #
+            #         a = AStar_Solver(expandPos, pos, ba.board)
+            #         a.Solve()
+            #         if (len(a.path) == 0):
+            #             continue;
+            #         # drawPath(ba.board, a.path)
+            #
+            #         return (expandPos, a.path);
+            #
 
-                newCol = pos[0] + self.direction[i][0] * expandIndex;
-                newRow = pos[1] + self.direction[i][1] * expandIndex;
-
-                expandPos = (newCol, newRow);
-
-                if (self.boardAnalyser.getChar(expandPos) == self.dotType) and takenPos != expandPos:
-                    # print("Try direct: {}".format(expandPos))
-                    a = AStar_Solver(expandPos, pos, ba.board)
-                    a.Solve()
-                    print("Try -> {}".format(expandPos))
-                    if (len(a.path) == 0):
-                        continue;
-                    # drawPath(ba.board, a.path)
-                    return (expandPos, a.path);
-
-            # Diagonal check 4 direction
-            for i in range(0, 4):
-
-                newCol = pos[0] + self.diagonal[i][0] * expandIndex;
-                newRow = pos[1] + self.diagonal[i][1] * expandIndex;
-
-                expandPos = (newCol, newRow);
-
-                if (self.boardAnalyser.getChar(expandPos) == self.dotType) and takenPos != expandPos:
-                    # print("Try Diagonal: {}".format(expandPos))
-
-                    a = AStar_Solver(expandPos, pos, ba.board)
-                    a.Solve()
-                    if (len(a.path) == 0):
-                        continue;
-                    # drawPath(ba.board, a.path)
-
-                    return (expandPos, a.path);
-
-
-            expandIndex += 1;
-
-        # Couldn;t find any nearby piece
-        return None;
+            # expandIndex += 1;
 
     def updateBoard(self, origin, replace):
 
@@ -510,6 +560,7 @@ class DotEliminator():
 
         colReplace = replace[0];
         rowReplace = replace[1];
+        # print("did {} <- {}".format(origin, replace))
 
         if self.boardAnalyser.board[colOrigin][rowOrigin] == '-':
             self.boardAnalyser.board[colOrigin][rowOrigin] = self.boardAnalyser.getChar(replace);
@@ -518,31 +569,33 @@ class DotEliminator():
             print("Update failed");
 
         # Empty PriorityQueue
-        self.priorityQueue.empty();
-
+        # self.priorityQueue.empty();
+        self.priorityQueue = PriorityQueue();
 
     def execKilling(self):
 
         if self.priorityQueue.qsize() > 0:
             # Move DotType to target position
-            data = self.priorityQueue.get(0);
-            print(data)
-            weight = data[0];
+            data = self.priorityQueue.get();
+            # print("Get -> {}".format(data))
+            # weight = data[0];
             foundPos = data[1];
             pair = data[2];
 
+            # print(pair)
+            index = 0;
             # outputBoard(self.boardAnalyser.board);
-
             for moveDot in foundPos:
+                # print("--> {}".format(moveDot));
 
                 dotPos = moveDot[0];
                 path = moveDot[1];
-                # targetPair = moveDot[2];
-                # Update board
-                drawPath(self.boardAnalyser.board, path);
-                
-                self.updateBoard(path[-1], dotPos);
+                self.totalCost += len(path)
 
+                # Update board
+                self.updateBoard(pair[index], dotPos);
+                drawPath(self.boardAnalyser.board, path);
+                index += 1
 
             return True;
 
@@ -563,10 +616,10 @@ if __name__ == '__main__':
     #     print(a.path[i])
     # print("{} {}".format(ba.getChar((2, 2)), ba.getChar((2, 4))));
 
-    print(ba.getPosOfChar("@"))
+    # print(ba.getPosOfChar("@"))
     bEliminator = DotEliminator("O", ba.getPosOfChar("@"), ba)
-
-    while bEliminator.getCanEliminateDotPairs():
+    count = 0
+    while len(bEliminator.getCanEliminateDotPairs()) > 0:
 
         bEliminator.findNearByDots();
         bEliminator.execKilling();
@@ -574,9 +627,9 @@ if __name__ == '__main__':
         for dot in ba.getPosOfChar("@"):
             bEliminator.checkDotNeedRemove(dot);
 
-        outputBoard(bEliminator.boardAnalyser.board)
+        # outputBoard(bEliminator.boardAnalyser.board)
 
-        print(len(bEliminator.getCanEliminateDotPairs()))
+        print("Total costs: {}".format(bEliminator.totalCost));
 
 
     # drawPath(ba.board, a.path)
