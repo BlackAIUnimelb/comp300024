@@ -1,9 +1,12 @@
-For calculating the number of available moves, what is the time complexity and space
-complexity of your program? You should not count the time taken to read the board
-configuration from input.
+--------------------------------------------------------------------------------
+
+Question1: For calculating the number of available moves, what is the time
+complexity and space complexity of your program? You should not count the time
+taken to read the board configuration from input.
 
 Let's assume n = the number of pieces one play has
-1. For each piece of the same colour, we will check if it can be moved on its four direction. Therefore:
+1. For each piece of the same colour, we will check if it can be moved on its
+four direction. Therefore:
 Time complexity: O(4*n) = O(n)
 
 Let's assume n = board size, m = the number of pieces one play has, n >> m
@@ -12,27 +15,58 @@ Let's assume n = board size, m = the number of pieces one play has, n >> m
 3. Since n >> m, therefore:
 Space complexity: O(n + 4*m) = O(n), where n is the board size
 
-For calculating the sequence of moves to eliminate all enemy pieces, how have you
-modelled the problem as a search problem? What search algorithm does your
-program use? If applicable, what is the branching factor of your search tree? What is
-the maximum search depth? Does your algorithm always return the shortest possible
-sequence of moves that will eliminate all enemy pieces?
+--------------------------------------------------------------------------------
 
-Path finding
-  1. Description
+Question2: For calculating the sequence of moves to eliminate all enemy pieces,
+how have you modelled the problem as a search problem? What search algorithm
+does your program use?If applicable, what is the branching factor of your search
+tree? What is the maximum search depth? Does your algorithm always return the
+shortest possible sequence of moves that will eliminate all enemy pieces?
 
-  2. Algorithm Analysis
+we have modelled it as a search problem in the following way:
 
-"Massacre" strategy
+  1. We search all black pieces that can be eliminated
+    (Means that we can surround it on two sides (horizontally or vertically) by
+    whites pieces or corners.)
 
-# Step1: Find all black pieces that can be eliminated (Means we can put this )
+  2. For each black piece that can be eliminated, we search its 2 nearest white
+     pieces(Least path costs) that can be moved to surround black piece on two sides.
 
-# Step2: Sort valid black pieces based on nearby whiteDots (The blackdot has the most and the closest whiteDots to be put the first)
+      2.1 To find a shortest path between two positions, we used greedy algorithm
+      Our heuristic function is based on manhattan distance between two positions.
 
-    #1.1: First Priority:  if there is a whiteDot at the pair position
-    #     Second Priority: Nearby closest whiteDots
-    #     Third Priority:  Might be added in the future
+      2.2 Since some black pieces can be surrounded on 2 sides
+          (vertically and horizontally),
+          some black pieces can only be surrounded on 1 side
+          (vertically or horizontally).
+          We calculated path costs as weight for each valid side, and put them into
+          priorityQueue
 
-# Step3: Try to eliminate the target blackDot and update the board and priorityQueue after its been eliminated
+  3. We get a black piece that has the least costs from priorityQueue to eliminate.
 
-# Step4: Re-scan the board and jump to step1 until no black pieces can be eliminated anymore
+  4. Jump to step1 and repeat steps above until no more enemy pieces to eliminate
+
+For our path finding search tree, the branching factor of search tree is 4
+because for a given position, it has 4 directions to move so that can generate
+4 possible nodes.
+
+Let's assume n = the board size, k = the number of pieces on the board
+Maximum search depth is n - k - 4(corner), that is, the number of all empty
+positions on the board.
+Because for a worst scenario, a piece might move every possible empty position
+until it gets to the destination.
+
+Our algorithm does not always return the shortest possible sequence of moves.
+
+Reason as follows:
+
+  1. Our heuristic function is based on manhattan distance between 2 positions,
+     which not always return the shortest path
+
+  2. Our algorithm returns the least costs of sequence of moves to eliminate
+     one black piece (We treats each black piece separately and we don't consider if
+     one position can eliminate 2 enemy pieces at the same time). But put them together,
+     it might be not the shortest possible sequence of moves that will eliminate all
+     enemy pieces.
+
+--------------------------------------------------------------------------------
