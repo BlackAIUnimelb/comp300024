@@ -1,57 +1,14 @@
 from queue import PriorityQueue
 import copy
 
-def outputBoard(board):
-
-    # for row in board:
-    for row in zip(*board):
-
-        for col in row:
-
-            print("{} ".format(col), end="")
-
-        print()
-
-    print()
-
-def drawPath(board, path):
-
-    if (len(path) == 0):
-        return
-
-    copyBoard = copy.deepcopy(board);
-
-    symbol = '~';
-
-    copyBoard[path[0][0]][path[0][1]] = symbol
-
-    for i in range(0, len(path)-1):
-
-        # Up direction (col equals but row is not)
-        if (path[i+1][1] < path[i][1] and path[i+1][0] == path[i][0]):
-            symbol = '↑';
-        # Down
-        elif (path[i+1][1] > path[i][1] and path[i+1][0] == path[i][0]):
-            symbol = '↓'
-        # Left
-        elif (path[i+1][0] < path[i][0] and path[i+1][1] == path[i][1]):
-            symbol = '←'
-        else:
-            symbol = '→'
-
-        # print(path[i+1], symbol)
-
-        copyBoard[path[i+1][0]][path[i+1][1]] = symbol
-    outputBoard(copyBoard)
-
-
+# Global function to output sequence of moves for a given path
 def outputPath(path):
 
     for i in range(1, len(path)):
 
         print("{} -> {}".format(path[i-1], path[i]));
 
-
+# Process board data and format them into 2D matrix
 class BoardAnalyser():
 
     def __init__(self):
@@ -89,13 +46,6 @@ class BoardAnalyser():
         pos_y = pos[1];
         o = self.board[pos_x][pos_y];
 
-        object_dict = {
-        	"X" : "conner",
-        	"O" : "white",
-        	"@" : "black",
-        	"-" : "space",
-        }
-
         return o;
 
     # Returns all coordinates of CHAR
@@ -116,33 +66,32 @@ class BoardAnalyser():
 
         return resultPos;
 
-    def countMoves(self, dots):
+    # Count the number of moves for a given series of pieces
+    def countMoves(self, pieces):
 
         total_moves = 0;
 
-        if (len(dots) == 0):
+        if (len(pieces) == 0):
             return 0;
 
         # Counts direct moves
-        for dot in dots:
+        for piece in pieces:
 
-            col = dot[0];
-            row = dot[1];
-            # col + 1
-            # col - 1
-            # row + 1
-            # row - 1
-            directDots = [(col+1, row), (col-1, row), (col, row+1), (col, row-1)];
+            col = piece[0];
+            row = piece[1];
+
+            # loop through 4 directions
+            directPieces = [(col+1, row), (col-1, row), (col, row+1), (col, row-1)];
 
             for i in range(0, 4):
 
-                if (self.getChar(directDots[i]) == '-'):
+                if (self.getChar(directPieces[i]) == '-'):
                     total_moves += 1;
 
-                if (self.getChar(directDots[i]) == 'O' or self.getChar(directDots[i]) == '@'):
+                if (self.getChar(directPieces[i]) == 'O' or self.getChar(directPieces[i]) == '@'):
 
-                    ccol = directDots[i][0];
-                    rrow = directDots[i][1];
+                    ccol = directPieces[i][0];
+                    rrow = directPieces[i][1];
 
                     # Up
                     if (i == 0 and self.getChar((ccol + 1, rrow)) == '-'):
@@ -168,30 +117,22 @@ class BoardAnalyser():
 
     def printWBMoves(self):
 
-        whiteDots = self.getPosOfChar('O');
-        blackDots = self.getPosOfChar('@');
-        print(self.countMoves(whiteDots));
-        print(self.countMoves(blackDots));
+        whitePieces = self.getPosOfChar('O');
+        blackPieces = self.getPosOfChar('@');
+        print(self.countMoves(whitePieces));
+        print(self.countMoves(blackPieces));
 
+    # Return sequeces of moves to eliminate all enemy pieces
+    def calcMassacreMove(self):
 
-    def sortBlackDotsList(self, blackDots, whiteDots):
-        pq = PriorityQueue();
-        for blackDot in blackDots:
-            priority = self.whiteDotsToABlackDot(blackDot, whiteDots);
-            pq.put([priority, blackDot]);
-        return pq; #黑棋被eliminate的顺序
+        bEliminator = PieceEliminator("O", self.getPosOfChar("@"), ba)
+        while len(bEliminator.getCanEliminatePiecePairs()) > 0:
 
-    def whiteDotsToABlackDot(self, blackDot, whiteDots):
-        if (len(whiteDots) == 0):
-            return -1;
+            bEliminator.findNearByPieces();
+            bEliminator.execElimination();
 
-        sumdist = 0
-        for whiteDot in whiteDots:
-            colW = whiteDot[0];
-            rowW = whiteDot[1];
-
-            sumdist += abs(colW - blackDot[0]) + abs(rowW - blackDot[1]);
-        return sumdist;
+            for piece in self.getPosOfChar("@"):
+                bEliminator.checkPieceNeedRemove(piece);
 
 
 class State(object):
@@ -218,20 +159,18 @@ class State(object):
 class StatePieces(State):
     def __init__(self, value, parent, environ, start = 0, goal = 0):
         super().__init__(value, parent, start, goal)
-        #super().__init__()
         self.environ = copy.deepcopy(environ)
-        #self.path_cost = path_cost
         self.dist = self.GetDist()
 
     def GetDist(self):
-        #priority
+        # Huristic function that returns manhattan distance
         if (self.value[0] == self.goal[0] and self.value[1] == self.goal[1]):
             return 0
         dist = abs(self.value[0] - self.goal[0]) + abs(self.value[1] - self.goal[1])
         return dist
 
     def CreateChildren(self):
-    	#create nodes
+    	#Generate node path
         if not self.children:
 
             direction = [
@@ -273,7 +212,7 @@ class StatePieces(State):
                     child = StatePieces(val, self, newEnviron, 0, 0)
                     self.children.append(child)
 
-class AStar_Solver:
+class Path_Solver:
 
     def __init__(self, start, goal, environ):
         self.path = []
@@ -309,95 +248,85 @@ class AStar_Solver:
 
         return self.path
 
-# Step1: Find all blackDots that have valid pair (blackdots that can be eliminated)
-
-# Step2: Sort valid blackDots based on nearby whiteDots (The blackdot has the most and the closest whiteDots to be put the first)
-
-    #1.1: First Priority:  if there is a whiteDot at the pair position
-    #     Second Priority: Nearby closest whiteDots
-    #     Third Priority:  Might be added in the future
-
-# Step3: Try to eliminate the target blackDot and update the board and priorityQueue after its been eliminated
-
-# Step4: Re-scan the board and jump to step1 until no  blackDots can be eliminated anymore
-class DotEliminator():
-    # DotType is the dot we use to eliminate dots
-    # if dots are black, then dotType is white
-    def __init__(self, dotType, dots, boardAnalyser):
-        self.dots = dots;
+# Step1: Find all blackPieces that can be eliminated
+# Step2: Sort valid blackPieces based on nearby whitePieces (The blackpiece has the most and the closest whitePieces to be put the first)
+# Step3: Try to eliminate the target blackPiece and update the board and priorityQueue after its been eliminated
+# Step4: Re-scan the board and jump to step1 until no more blackPieces can be eliminated
+class PieceEliminator():
+    # PieceType is the piece we use to eliminate pieces
+    # if pieces are black, then pieceType is white
+    def __init__(self, pieceType, pieces, boardAnalyser):
+        self.pieces = pieces;
         self.boardAnalyser = boardAnalyser;
-        self.dotType = dotType;
-        self.eliminateDotType = '@'
-        # self.direction = [(0, -1), (0, 1), (-1, 0), (1, 0)]  #上下左右
-        # self.diagonal = [(-1, -1), (-1, 1), (-1, 1), (1, 1)]
-        self.usedDots = [];
+        self.pieceType = pieceType;
+        self.eliminatePieceType = '@'
+        self.usedPieces = [];
         self.totalCost = 0;
 
-        # Item format:( weight, [target position], (blackDot position) )
-        # Weight = (distance of nearby 2 whiteDots) - (existed number of whiteDot within pair)*K
-        # k = 1 (preset)
+        # Item format:( weight, [position of two eliminating pieces], (blackPiece position) )
+        # Weight = (costs of the shortest path of nearby 2 whitePieces)
         self.priorityQueue = PriorityQueue();
 
-    def printBlackDots(self):
+    def printBlackPieces(self):
 
-        print(self.dots);
+        print(self.pieces);
 
-    def checkDotNeedRemove(self, dot):
+    def checkPieceNeedRemove(self, piece):
 
-        col = dot[0];
-        row = dot[1];
+        col = piece[0];
+        row = piece[1];
 
-        # Remove dot that between two dotType
-        if (self.boardAnalyser.getChar( (col, row + 1)) in ['X', self.dotType] and self.boardAnalyser.getChar((col, row - 1)) in ['X', self.dotType] ):
+        # Remove piece that between two pieceType
+        if (self.boardAnalyser.getChar( (col, row + 1)) in ['X', self.pieceType] and self.boardAnalyser.getChar((col, row - 1)) in ['X', self.pieceType] ):
             self.boardAnalyser.board[col][row] = '-';
-        elif (self.boardAnalyser.getChar( (col - 1, row)) in ['X', self.dotType] and self.boardAnalyser.getChar((col + 1, row)) in ['X', self.dotType]):
+        elif (self.boardAnalyser.getChar( (col - 1, row)) in ['X', self.pieceType] and self.boardAnalyser.getChar((col + 1, row)) in ['X', self.pieceType]):
             self.boardAnalyser.board[col][row] = '-';
 
-    def getCanEliminateDotPairs(self):
+    def getCanEliminatePiecePairs(self):
 
         result = []
 
-        for dot in self.boardAnalyser.getPosOfChar(self.eliminateDotType):
+        for piece in self.boardAnalyser.getPosOfChar(self.eliminatePieceType):
 
-            col = dot[0]
-            row = dot[1]
+            col = piece[0]
+            row = piece[1]
 
-            self.checkDotNeedRemove(dot);
+            self.checkPieceNeedRemove(piece);
 
             pair = [];
             # Check up and down pair
             if (self.boardAnalyser.getChar( (col, row + 1)) == '-' and self.boardAnalyser.getChar((col, row - 1)) == '-' ):
-                pair.append([2, [(col, row + 1), (col, row - 1)], dot]);
-            # Check if up position has been taken by dotType we use
-            elif (self.boardAnalyser.getChar( (col, row + 1)) in ['X', self.dotType] and self.boardAnalyser.getChar((col, row - 1)) == '-'):
-                pair.append([1, [(col, row - 1), (col, row + 1)], dot]);
-            # Check if down position has been taken by dotType we use
-            elif (self.boardAnalyser.getChar( (col, row - 1)) in ['X', self.dotType] and self.boardAnalyser.getChar((col, row + 1)) == '-'):
-                pair.append([1, [(col, row + 1), (col, row - 1)], dot]);
+                pair.append([2, [(col, row + 1), (col, row - 1)], piece]);
+            # Check if up position has been taken by pieceType we use
+            elif (self.boardAnalyser.getChar( (col, row + 1)) in ['X', self.pieceType] and self.boardAnalyser.getChar((col, row - 1)) == '-'):
+                    pair.append([1, [(col, row - 1), (col, row + 1)], piece]);
+                # Check if down position has been taken by pieceType we use
+            elif (self.boardAnalyser.getChar( (col, row - 1)) in ['X', self.pieceType] and self.boardAnalyser.getChar((col, row + 1)) == '-'):
+                    pair.append([1, [(col, row + 1), (col, row - 1)], piece]);
 
 
             # Check left and right pair
             if (self.boardAnalyser.getChar( (col - 1, row)) == '-' and self.boardAnalyser.getChar((col + 1, row)) == '-'):
-                pair.append([2, [(col - 1, row), (col + 1, row)], dot]);
-            # Check if left position has been taken by dotType we use
-            elif (self.boardAnalyser.getChar( (col - 1, row)) in ['X', self.dotType] and self.boardAnalyser.getChar((col + 1, row)) == '-'):
-                pair.append([1, [(col + 1, row), (col - 1, row)], dot]);
-            # Check if right position has been taken by dotType we use
-            elif (self.boardAnalyser.getChar( (col + 1, row)) in ['X', self.dotType] and self.boardAnalyser.getChar((col - 1, row)) == '-'):
-                pair.append([1, [(col - 1, row), (col + 1, row)], dot]);
+                pair.append([2, [(col - 1, row), (col + 1, row)], piece]);
+            # Check if left position has been taken by pieceType we use
+            elif (self.boardAnalyser.getChar( (col - 1, row)) in ['X', self.pieceType] and self.boardAnalyser.getChar((col + 1, row)) == '-'):
+                    pair.append([1, [(col + 1, row), (col - 1, row)], piece]);
+                # Check if right position has been taken by pieceType we use
+            elif (self.boardAnalyser.getChar( (col + 1, row)) in ['X', self.pieceType] and self.boardAnalyser.getChar((col - 1, row)) == '-'):
+                    pair.append([1, [(col - 1, row), (col + 1, row)], piece]);
 
 
             if (len(pair) > 0):
                 result.append(pair)
 
-        # [[number of pairs, [pair coordinates], dot position], ... ]
+        # [[number of pairs, [pair coordinates], piece position], ... ]
         return result
 
-    def findNearByDots(self):
+    def findNearByPieces(self):
 
-        allDotsPairs = self.getCanEliminateDotPairs()
+        allPiecesPairs = self.getCanEliminatePiecePairs()
 
-        for pairData in allDotsPairs:
+        for pairData in allPiecesPairs:
 
             for pair in pairData:
 
@@ -408,20 +337,20 @@ class DotEliminator():
                 if pair[0] == 1:
 
                     pos = pair[1][0];
-                    takenDot = pair[1][1]
-                    # DotType already took this position
-                    expandResult = self.expandCheckNearby(pos, takenDot);
+                    takenPiece = pair[1][1]
+                    # PieceType already took this position
+                    expandResult = self.expandCheckNearby(pos, takenPiece);
 
                     if (expandResult != None):
 
-                        # Records dot position and path
+                        # Records piece position and path
                         foundPos.append(expandResult[1:]);
                         pathLength = expandResult[0]
                         weight += pathLength;
 
                 elif pair[0] == 2:
 
-                    takenDot = ();
+                    takenPiece = ();
                     # Checks the first position within pair
                     pos1 = pair[1][0];
                     expandResult1 = self.expandCheckNearby(pos1);
@@ -432,11 +361,11 @@ class DotEliminator():
                         pathLength = expandResult1[0]
                         weight += pathLength;
 
-                        takenDot = expandResult1[1]
+                        takenPiece = expandResult1[1]
 
                     # Checks the second position within pair
                     pos2 = pair[1][1];
-                    expandResult2 = self.expandCheckNearby(pos2, takenDot, pos1);
+                    expandResult2 = self.expandCheckNearby(pos2, takenPiece, pos1);
 
                     if (expandResult1 != None and expandResult2 != None):
 
@@ -451,44 +380,36 @@ class DotEliminator():
                     # print("put ->{}".format([weight, foundPos, pair[1]]))
                     self.priorityQueue.put([weight, foundPos, pair[1]])
 
-    # return coordinates of dotType that has the shortest distance to the target position
-    def expandCheckNearby(self, pos, takenDot = None, takenDestination=None):
+    # return coordinates of pieceType that has the shortest distance to the target position
+    def expandCheckNearby(self, pos, takenPiece = None, takenDestination=None):
 
-        # print(pos)
         expandPos = pos;
         expandIndex = 1;
-        allDots = []
-        # print("start: {}".format(pos))
-
+        allPieces = []
         pQueue = PriorityQueue();
 
+        allPieceTypePieces = self.boardAnalyser.getPosOfChar(self.pieceType);
 
-        allDotTypeDots = self.boardAnalyser.getPosOfChar(self.dotType);
+        for piece in allPieceTypePieces:
 
-        for dot in allDotTypeDots:
-
-            if dot != takenDot:
+            if piece != takenPiece:
 
                 tempBoard = self.boardAnalyser.board;
 
                 if takenDestination != None and self.boardAnalyser.getChar(takenDestination) == '-':
                     tempBoard = copy.deepcopy(self.boardAnalyser.board);
-                    tempBoard[takenDestination[0]][takenDestination[1]] = self.dotType;
-                    # outputBoard(tempBoard);
+                    tempBoard[takenDestination[0]][takenDestination[1]] = self.pieceType;
 
-                a = AStar_Solver(dot, pos, tempBoard)
+                a = Path_Solver(piece, pos, tempBoard)
                 a.Solve()
                 if len(a.path) != 0:
-                    pQueue.put([len(a.path), dot, a.path]);
+                    pQueue.put([len(a.path), piece, a.path]);
 
         if pQueue.qsize():
 
-            nearestDot = pQueue.get();
-            # print("nearest -> {}".format(nearestDot[1]))
-            # print(nearestDot)
-            # self.usedDots.append(nearestDot[1]);
+            nearestPiece = pQueue.get();
 
-            return nearestDot;
+            return nearestPiece;
 
         # Couldn't find any nearby piece
         return None;
@@ -500,43 +421,35 @@ class DotEliminator():
 
         colReplace = replace[0];
         rowReplace = replace[1];
-        # print("did {} <- {}".format(origin, replace))
 
         if self.boardAnalyser.board[colOrigin][rowOrigin] == '-':
             self.boardAnalyser.board[colOrigin][rowOrigin] = self.boardAnalyser.getChar(replace);
             self.boardAnalyser.board[colReplace][rowReplace] = '-';
-            # print("updated -> {}".format(origin))
         else:
             print("Update failed");
 
-        # Empty PriorityQueue
-        # self.priorityQueue.empty();
+        # Init a new priorityQueue
         self.priorityQueue = PriorityQueue();
 
-    def execKilling(self):
+    def execElimination(self):
 
         if self.priorityQueue.qsize() > 0:
-            # Move DotType to target position
+            # Move PieceType to target position
             data = self.priorityQueue.get();
-            # print("Get -> {}".format(data))
-            # weight = data[0];
             foundPos = data[1];
             pair = data[2];
 
-            # print(pair)
             index = 0;
-            # outputBoard(self.boardAnalyser.board);
-            for moveDot in foundPos:
-                # print("--> {}".format(moveDot));
+            for movePiece in foundPos:
 
-                dotPos = moveDot[0];
-                path = moveDot[1];
+                piecePos = movePiece[0];
+                path = movePiece[1];
                 self.totalCost += len(path)
                 # Update board
-                self.updateBoard(pair[index], dotPos);
+                self.updateBoard(pair[index], piecePos);
+                # Output the sequeces of moves
                 outputPath(path)
-                drawPath(self.boardAnalyser.board, path);
-                # outputBoard(self.boardAnalyser.board)
+
                 index += 1
 
             return True;
@@ -546,19 +459,17 @@ class DotEliminator():
 
 if __name__ == '__main__':
 
+    # Init boardAnalyser object
     ba = BoardAnalyser();
+    # Process baord data and format them as a 2D matrix
     ba.formatInput();
 
+    # Execute Move command
     if ba.command == 'Moves':
+        # Print number of moves that black pieces and whites pieces can make
         ba.printWBMoves();
-    # execute Massacre
+
+    # Execute Massacre command
     elif ba.command == 'Massacre':
-
-        bEliminator = DotEliminator("O", ba.getPosOfChar("@"), ba)
-        while len(bEliminator.getCanEliminateDotPairs()) > 0:
-
-            bEliminator.findNearByDots();
-            bEliminator.execKilling();
-
-            for dot in ba.getPosOfChar("@"):
-                bEliminator.checkDotNeedRemove(dot);
+        # Return sequeces of moves to eliminate all enemy pieces
+        ba.calcMassacreMove();
