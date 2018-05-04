@@ -247,21 +247,23 @@ def manhattanDistance(pos1, pos2):
     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]);
 
 class Node():
-    def __init__(self, ba, depth, player, value, maxSoFar):
+    def __init__(self, ba, depth, player, value, maxSoFar, max_depth):
         self.depth = depth;
+        self.max_depth = max_depth;
         self.board = ba;   #state
         self.player = player;
         self.value = value;
         self.maxSoFar = maxSoFar;
 
         self.board.updateBoard();
-
-        if self.value < maxSoFar:
-            return;
-        else:
-            self.maxSoFar = self.value;
-
         self.children = [];
+
+        if self.depth >= 0:
+            if self.value < self.maxSoFar[self.max_depth - self.depth]:
+                return;
+            else:
+                self.maxSoFar[self.max_depth - self.depth] = self.value;
+
         self.createChildren();
 
     def createChildren(self):
@@ -282,7 +284,8 @@ class Node():
                         newBoard = copy.deepcopy(self.board);
                         endPos = directDots[i];
                         newBoard.makeMove(wp, endPos);
-                        self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
+                        self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar, self.max_depth));
+                        continue;
                     #check if can jump
                     if (self.board.getChar(directDots[i]) == 'O' or self.board.getChar(directDots[i]) == '@'):
                         ccol = directDots[i][0];
@@ -293,28 +296,28 @@ class Node():
                         if (i == 0 and ccol+1 <= 7 and self.board.getChar((ccol + 1, rrow)) == '-'):
                             endPos = (ccol + 1, rrow);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar, self.max_depth));
                             continue;
 
                         # up
                         if (i == 1 and ccol-1 >= 0 and self.board.getChar((ccol - 1, rrow)) == '-'):
                             endPos = (ccol - 1, rrow);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar, self.max_depth));
                             continue;
 
                         # Right
                         if (i == 2 and rrow+1 <= 7 and self.board.getChar((ccol, rrow + 1)) == '-'):
                             endPos = (ccol, rrow + 1);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar, self.max_depth));
                             continue;
 
                         # Left
                         if (i == 3 and rrow-1 >= 0 and self.board.getChar((ccol, rrow - 1)) == '-'):
                             endPos = (ccol, rrow - 1);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar, self.max_depth));
                             continue;
 
     #evaluation function 
@@ -329,8 +332,15 @@ class Node():
         newValue = 0;
 
         eliminateBlackPosition = [];
+        # isBpHasWpAround = [];
+
         distFromStartToebp = [];
         distFromEndToebp = [];
+
+        numberOfWpAroundBp = [];
+        for j in range(0, len(blackPieces)):
+            numberOfWpAroundBp.append(0);
+        j = 0;
 
 
         for bp in blackPieces:
@@ -345,9 +355,17 @@ class Node():
                 if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
                     continue;
                 if ba.getChar(directDots[i]) == 'O' or ba.getChar(directDots[i]) == 'X':
+                    # numberOfWpAroundBp[j] = numberOfWpAroundBp[j] + 1;
                     ind = (i + 2) % 4;
                     if ba.getChar(directDots[ind]) == '-' and directDots[ind] not in eliminateBlackPosition:
                         eliminateBlackPosition.append(directDots[ind]);
+                        break;
+
+            for i in range(0, 4):
+                if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
+                    continue;
+                if ba.getChar(directDots[i]) == 'O' or ba.getChar(directDots[i]) == 'X':
+                    numberOfWpAroundBp[j] = numberOfWpAroundBp[j] + 1;
 
             #保存距离
             dist = manhattanDistance(bp, startPos);          #指定白棋 到所有黑棋的 距离
@@ -355,6 +373,8 @@ class Node():
 
             dist = manhattanDistance(bp, endPos);        #指定白棋 位移之后 到所有黑棋的 距离
             distListFromEnd.append(dist);
+
+            j = j + 1;
 
         minDist = min(distListFromStart);
         minIndex = distListFromStart.index(minDist);
@@ -369,33 +389,54 @@ class Node():
                 distFromEndToebp.append(dist);
 
             minDistToebp = min(distFromStartToebp);
+            cnt = 0;
+
+            for h in distFromStartToebp:
+                if h == minDistToebp:
+                    cnt = cnt + 1;
+
             minIndexToebp = distFromStartToebp.index(minDistToebp);
 
-            if distListFromStart[minIndex] == 1:   #如果白棋还没移动前，已经在黑棋旁边了
-                newValue = 0;
-            elif distFromEndToebp[minIndexToebp] == 1:
+            if distListFromStart[minIndex] == 1 and numberOfWpAroundBp[minIndex] == 1:   #如果白棋还没移动前，已经在黑棋旁边了 ??  并且 黑棋周围不能有两颗白棋
+                newValue = 3;
+            elif distFromEndToebp[minIndexToebp] == 0 and numberOfWpAroundBp[minIndex] != 2:
                 newValue = 999;
             elif distFromEndToebp[minIndexToebp] < distFromStartToebp[minIndexToebp]:
-                newValue = 9;
+                newValue = 19 + (-1)*distFromStartToebp[minIndexToebp];         #越近的白棋，value 越高
             else:
-                newValue = -9;
-            return value + newValue + (depth);
+                newValue = -19;
+            return value + newValue + ((-1)*(0.5)**(depth))*1000;
 
 
 
         if distListFromStart[minIndex] == 1:   #如果白棋还没移动前，已经在黑棋旁边了
-            newValue = 0;
+            newValue = 3;
 
         elif distListFromEnd[minIndex] == 1:
-            newValue = 99;      #如果白棋走到那颗黑棋旁边
+            newValue = 60;      #如果白棋走到那颗黑棋旁边
 
         elif distListFromEnd[minIndex] < distListFromStart[minIndex]: #白棋向那颗黑棋靠近
-            newValue = 9;  #approaching is good 
+            newValue = 9 + (-1)*distListFromStart[minIndex];  #approaching is good       #越近的白棋，value 越高
 
         else:
             newValue = -9;
 
-        return value + newValue + (depth);
+        return value + newValue + ((-1)*(0.5)**(depth))*1000;
+
+    def find_max_value(self):
+        if len(self.children) == 0:
+            return self.value;
+
+        infinity = float('inf');
+        max_value = -infinity;
+        
+        for child in self.children:
+            tmp_value = child.find_max_value();
+            max_value = max(max_value, tmp_value);
+
+        self.value = max_value;
+        #outputBoard(i.board.board);
+        return max_value;
 
 
 class MiniMax():
@@ -439,7 +480,7 @@ class MiniMax():
         for child in successors:
             old_max_value = max_value;
             max_value = max(max_value, child.value);
-            if (old_max_value != max_value):
+            if (old_max_value < max_value):
                 i = child;
 
         #outputBoard(i.board.board);
@@ -464,16 +505,24 @@ if __name__ == '__main__':
     ba.formatInput();        #get input
 
     depth = 5;
+    max_depth = 5;
     player = 1;
     value = 0;
     infinity = float('inf');
     max_value = -infinity;
-    node = Node(ba, depth, player, value, max_value);
+    max_value_list = [];
+    for k in range(0, depth+1):
+        max_value_list.append(max_value);
+    node = Node(ba, depth, player, value, max_value_list, max_depth);
+
+    node.find_max_value();
 
     miniMax = MiniMax(node);
     bm = miniMax.minimax(node);
 
     for i in bm:
-        outputBoard(i.board.board); 
+        outputBoard(i.board.board);
+        print(i.value); 
+        print(i.maxSoFar);
 
     print("finish in {}".format(time.time() - startTime) );
