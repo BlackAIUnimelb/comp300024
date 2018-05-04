@@ -54,7 +54,6 @@ Maximum search depth is n - k - 4(corner), that is, the number of all empty
 positions on the board.
 Because for a worst scenario, a piece might move every possible empty position
 until it gets to the destination.
->>>>>>> c33d37c9610b2c852a36fa524881f79ed73ae12d
 
 Our algorithm does not always return the shortest possible sequence of moves.
 
