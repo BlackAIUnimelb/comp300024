@@ -1,6 +1,6 @@
 from queue import PriorityQueue
 import copy
-
+import time
 #-------------------------------------------------------------------
 #Display functions 
 
@@ -247,13 +247,19 @@ def manhattanDistance(pos1, pos2):
     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1]);
 
 class Node():
-    def __init__(self, ba, depth, player, value):
+    def __init__(self, ba, depth, player, value, maxSoFar):
         self.depth = depth;
         self.board = ba;   #state
         self.player = player;
         self.value = value;
+        self.maxSoFar = maxSoFar;
 
         self.board.updateBoard();
+
+        if self.value < maxSoFar:
+            return;
+        else:
+            self.maxSoFar = self.value;
 
         self.children = [];
         self.createChildren();
@@ -276,7 +282,7 @@ class Node():
                         newBoard = copy.deepcopy(self.board);
                         endPos = directDots[i];
                         newBoard.makeMove(wp, endPos);
-                        self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1)));
+                        self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
                     #check if can jump
                     if (self.board.getChar(directDots[i]) == 'O' or self.board.getChar(directDots[i]) == '@'):
                         ccol = directDots[i][0];
@@ -287,28 +293,28 @@ class Node():
                         if (i == 0 and ccol+1 <= 7 and self.board.getChar((ccol + 1, rrow)) == '-'):
                             endPos = (ccol + 1, rrow);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1)));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
                             continue;
 
                         # up
                         if (i == 1 and ccol-1 >= 0 and self.board.getChar((ccol - 1, rrow)) == '-'):
                             endPos = (ccol - 1, rrow);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1)));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
                             continue;
 
                         # Right
                         if (i == 2 and rrow+1 <= 7 and self.board.getChar((ccol, rrow + 1)) == '-'):
                             endPos = (ccol, rrow + 1);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1)));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
                             continue;
 
                         # Left
                         if (i == 3 and rrow-1 >= 0 and self.board.getChar((ccol, rrow - 1)) == '-'):
                             endPos = (ccol, rrow - 1);
                             newBoard.makeMove(wp, endPos);
-                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1)));
+                            self.children.append(Node(newBoard, self.depth-1, self.player, self.getValue(copy.deepcopy(self.board), self.value, wp, endPos, self.depth-1), self.maxSoFar));
                             continue;
 
     #evaluation function 
@@ -403,6 +409,7 @@ class MiniMax():
     def minimax(self, node):
         bestNodeList = [];
 
+
         while not self.isTerminal(node):
 
             bestVal = self.max_value(node);
@@ -451,6 +458,7 @@ class MiniMax():
         return node.value;
 
 if __name__ == '__main__':
+    startTime = time.time();
 
     ba = BoardAnalyser();
     ba.formatInput();        #get input
@@ -458,7 +466,9 @@ if __name__ == '__main__':
     depth = 5;
     player = 1;
     value = 0;
-    node = Node(ba, depth, player, value);
+    infinity = float('inf');
+    max_value = -infinity;
+    node = Node(ba, depth, player, value, max_value);
 
     miniMax = MiniMax(node);
     bm = miniMax.minimax(node);
@@ -466,4 +476,4 @@ if __name__ == '__main__':
     for i in bm:
         outputBoard(i.board.board); 
 
-    print("finish");
+    print("finish in {}".format(time.time() - startTime) );
