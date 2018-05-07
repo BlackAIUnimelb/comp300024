@@ -18,30 +18,12 @@ class Player():
 		if (self.cnt > 12):
 			self.placingPhase = False;
 
-		#User input 
-		# paction = None;
-		# if self.placingPhase:
-		# 	pos = input("Placing Phase White Player:");
-		# 	# tmplist = ();
-		# 	pos = pos.split();
-		# 	a = int(float(pos[0]));
-		# 	b = int(float(pos[1]));
-		# 	paction = (a ,b);
-		# else:
-		# 	pos = input("Moving Phase White Player:");
-		# 	# tmplist = ();
-		# 	pos = pos.split();
-		# 	a = int(float(pos[0]));
-		# 	b = int(float(pos[1]));
-		# 	c = int(float(pos[2]));
-		# 	d = int(float(pos[3]));
-		# 	paction = ((a ,b), (c, d));
-
 		#if it is in placing phase 
 		if self.placingPhase:
-
+			# print("Board view " + self.colour)
+			# outputBoard(self.ba.board);
 			paction = ();
-			eliminateBlackPosition = self.isBPKillable();
+			eliminateBlackPosition = self.isOpponentKillable();
 			if len(eliminateBlackPosition) == 0:
 				#no black pieces to be eliminated
 				#防守
@@ -51,44 +33,24 @@ class Player():
 				defensiveMove = self.defensivePlacePostion(allowedPositionsList);
 				if len(defensiveMove) > 0:
 					paction = (defensiveMove[0][0], defensiveMove[0][1]);
-					self.ba.placePiece(paction, 'white');
-					self.ba.updateBoard();
+					self.ba.placePiece(paction, self.colour);
+					self.ba.updateBoard(self.colour);
 					return paction;
 				else:
 					#如果不需要defense
 					#随意place??
 					while(1):
-						rand_col = randint(0, 7);
-						rand_row = randint(2, 3);
-						rand_pos = (rand_col, rand_row);
-						if rand_pos in allowedPositionsList:
-							paction = rand_pos;
-							self.ba.placePiece(paction, 'white');
-							self.ba.updateBoard();
-							return paction;
-						else:
-							rand_row = 1;
-							rand_pos = (rand_col, rand_row);
-							if rand_pos in allowedPositionsList:
-								paction = rand_pos;
-								self.ba.placePiece(paction, 'white');
-								self.ba.updateBoard();
-								return paction;
-							else:
-								rand_row = 0;
-								rand_pos = (rand_col, rand_row);
-								if rand_pos in allowedPositionsList:
-									paction = rand_pos;
-									self.ba.placePiece(paction, 'white');
-									self.ba.updateBoard();
-									return paction;
+						paction = self.randomPlace(allowedPositionsList);
+						self.ba.placePiece(paction, self.colour);
+						self.ba.updateBoard(self.colour);
+						return paction;
 
 
 			else:
 				#假设 len(eliminateBlackPosition) 最大就是 1
 				paction = (eliminateBlackPosition[0][0], eliminateBlackPosition[0][1]);
-				self.ba.placePiece(paction, 'white');
-				self.ba.updateBoard();
+				self.ba.placePiece(paction, self.colour);
+				self.ba.updateBoard(self.colour);
 				return paction;
 
 		#if it is in moving phase
@@ -97,14 +59,19 @@ class Player():
 
 
 
-		self.ba.placePiece(paction, 'white');
-		self.ba.updateBoard();
+		self.ba.placePiece(paction, self.colour);
+		self.ba.updateBoard(self.colour);
 		return paction;
 
 
 	def update(self, actions):
-		self.ba.placePiece(actions, 'black');
-		self.ba.updateBoard();
+		if self.colour == 'white':
+			opponentColour = 'black';
+		elif self.colour == 'black':
+			opponentColour = 'white';
+
+		self.ba.placePiece(actions, opponentColour);
+		self.ba.updateBoard(opponentColour);
 
 		return;
 
@@ -112,68 +79,95 @@ class Player():
 
 	#in placing phase, check if there is a black piece that is killable 
 	#return list
-	def isBPKillable(self):
-		blackPieces = self.ba.getPosOfChar('@');
-		if len(blackPieces) == 0:
+	def isOpponentKillable(self):
+		isWhite = True;
+		if self.colour == 'white':
+			opponentSymbol = '@';
+			selfSymbol = 'O';
+			isWhite = True;
+		elif self.colour == 'black':
+			opponentSymbol = 'O';
+			selfSymbol = '@';
+			isWhite = False;
+
+		opponentPieces = self.ba.getPosOfChar(opponentSymbol);
+		if len(opponentPieces) == 0:
 			return [];
 
 		eliminateBlackPosition = [];
 
-		for bp in blackPieces:
-			col = bp[0];
-			row = bp[1];
+		for op in opponentPieces:
+			col = op[0];
+			row = op[1];
 
 			directDots = [(col+1, row), (col, row+1), (col-1, row), (col, row-1)];
 			for i in range(0, 4):
 				#边界情况
 				if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
 					continue;
-				if self.ba.getChar(directDots[i]) == 'O' or self.ba.getChar(directDots[i]) == 'X':
+				if self.ba.getChar(directDots[i]) == selfSymbol or self.ba.getChar(directDots[i]) == 'X':
 					ind = (i + 2) % 4;
 					if self.ba.isInsideBoardRange(directDots[ind]) and self.ba.getChar(directDots[ind]) == '-' and directDots[ind] not in eliminateBlackPosition:
 						# 白棋只能放在第5行及以上
-						if directDots[ind][1] <= 5:
+						if (directDots[ind][1] <= 5 and isWhite) or (isWhite == False and directDots[ind][1] >= 2):
 							eliminateBlackPosition.append(directDots[ind]);
 
 		return eliminateBlackPosition;
 
     #in placing phase, there are position where white pieces cannot place
-    def notAllowedPosition(self):
-        notAllowedPositionList = [];
-        #对白棋来说，最下面两行不可以place
-        for i in range(6, 8):
-            for j in range(0, 8):
-                notAllowedPositionList.append((j,i));
-        notAllowedPositionList.append((0, 0));
-        notAllowedPositionList.append((7 ,0));
+	def notAllowedPosition(self):
+		isWhite = True;
+		if self.colour == 'white':
+			isWhite = True;
+			opponentSymbol = '@';
+			selfSymbol = 'O';
+		elif self.colour == 'black':
+			isWhite = False;
+			opponentSymbol = 'O';
+			selfSymbol = '@';
 
-        blackPieces = self.ba.getPosOfChar('@');
+		notAllowedPositionList = [];
+		#对白棋来说，最下面两行不可以place
+		if isWhite:
+			for i in range(6, 8):
+				for j in range(0, 8):
+					notAllowedPositionList.append((j,i));
+			notAllowedPositionList.append((0, 0));
+			notAllowedPositionList.append((7 ,0));
+		else:
+			for i in range(0, 2):
+				for j in range(0, 8):
+					notAllowedPositionList.append((j,i));
+			notAllowedPositionList.append((0, 7));
+			notAllowedPositionList.append((7 ,7));
 
-        #if there are black pieces on the board
-        if len(blackPieces) > 0:
-            for bp in blackPieces:
-                col = bp[0];
-                row = bp[1];
-                notAllowedPositionList.append(bp);
+		opponentPieces = self.ba.getPosOfChar(opponentSymbol);
 
-                #黑棋的4个方向
-                directDots = [(col+1, row), (col, row+1), (col-1, row), (col, row-1)];
-                nextDirectDots = [(col+2, row), (col, row+2), (col-2, row), (col, row-2)];
-                for i in range(0, 4):
-                    #边界情况
-                    if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
-                        continue;
+		#if there are black pieces on the board
+		if len(opponentPieces) > 0:
+			for op in opponentPieces:
+				col = op[0];
+				row = op[1];
+				notAllowedPositionList.append(op);
 
-                    if self.ba.getChar(directDots[i]) == '-' and self.ba.isInsideBoardRange(nextDirectDots[i]) and (self.ba.getChar(nextDirectDots[i]) == 'X' or self.ba.getChar(nextDirectDots[i]) == '@' or self.ba.getChar(nextDirectDots[i]) == '-'):
-                        if directDots[i] not in notAllowedPositionList:
-                            notAllowedPositionList.append(directDots[i]);
+				#黑棋的4个方向
+				directDots = [(col+1, row), (col, row+1), (col-1, row), (col, row-1)];
+				nextDirectDots = [(col+2, row), (col, row+2), (col-2, row), (col, row-2)];
+				for i in range(0, 4):
+					#边界情况
+					if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
+						continue;
 
-        whitePieces = self.ba.getPosOfChar('O');
-        if len(whitePieces) > 0:
-            for wp in whitePieces:
-                notAllowedPositionList.append(wp);
+					if self.ba.getChar(directDots[i]) == '-' and self.ba.isInsideBoardRange(nextDirectDots[i]) and (self.ba.getChar(nextDirectDots[i]) == 'X' or self.ba.getChar(nextDirectDots[i]) == opponentSymbol or self.ba.getChar(nextDirectDots[i]) == '-'):
+						if directDots[i] not in notAllowedPositionList:
+							notAllowedPositionList.append(directDots[i]);
 
-        return notAllowedPositionList;
+		selfPieces = self.ba.getPosOfChar(selfSymbol);
+		if len(selfPieces) > 0:
+			for sp in selfPieces:
+				notAllowedPositionList.append(sp);
+
+		return notAllowedPositionList;
 
 	#in placing phase, return the allowed positions for white pieces to place 
 	def allowedPositions(self):
@@ -191,14 +185,21 @@ class Player():
 
 	# defensive move when white piece is surrounded by black piece
 	def defensivePlacePostion(self, allowedPositionsList):
+		if self.colour == 'white':
+			selfSymbol = 'O';
+			opponentSymbol = '@';
+		elif self.colour == 'black':
+			selfSymbol = '@';
+			opponentSymbol = 'O';
+
 		defensiveMove = [];
-		whitePieces = self.ba.getPosOfChar('O');
-		if len(whitePieces) == 0:
+		selfPieces = self.ba.getPosOfChar(selfSymbol);
+		if len(selfPieces) == 0:
 			return [];
 
 		defensiveMove = [];
 
-		for wp in whitePieces:
+		for wp in selfPieces:
 			col = wp[0];
 			row = wp[1];
 
@@ -208,7 +209,7 @@ class Player():
 				#边界情况
 				if (self.ba.isInsideBoardRange(directDots[i]) == False):
 					continue;
-				if self.ba.getChar(directDots[i]) == '@':
+				if self.ba.getChar(directDots[i]) == opponentSymbol:
 					ind = (i + 2) % 4;
 					if self.ba.isInsideBoardRange(directDots[ind]) and self.ba.getChar(directDots[ind]) == '-' and directDots[ind] in allowedPositionsList:
 						defensiveMove.append(directDots[ind]);
@@ -216,6 +217,44 @@ class Player():
 
 		#假设整个棋盘上只有一个字要去defense
 		return defensiveMove;
+
+	def randomPlace(self, allowedPositionsList):
+		isWhite = True;
+		if self.colour == 'white':
+			isWhite = True;
+		elif self.colour == 'black':
+			isWhite = False;
+
+		while(1):
+			if isWhite:
+				rand_col = randint(0, 7);
+				rand_row = randint(2, 3);
+			else:
+				rand_col = randint(0, 7);
+				rand_row = randint(4, 5);
+
+			rand_pos = (rand_col, rand_row);
+			if rand_pos in allowedPositionsList:
+				paction = rand_pos;
+				return paction;
+			else:
+				if isWhite:
+					rand_row = 1;
+				else:
+					rand_row = 6;
+				rand_pos = (rand_col, rand_row);
+				if rand_pos in allowedPositionsList:
+					paction = rand_pos;
+					return paction;
+				else:
+					if isWhite:
+						rand_row = 0;
+					else:
+						rand_row = 7;
+					rand_pos = (rand_col, rand_row);
+					if rand_pos in allowedPositionsList:
+						paction = rand_pos;
+						return paction;
 
 
 
@@ -597,24 +636,75 @@ class BoardAnalyser():
         # self.updateBoard();
 
     #check if black pieces being eliminated
-    def updateBoard(self):
-        board = copy.deepcopy(self.board);
-        blackPieces = self.getPosOfChar('@');
-        for bp in blackPieces:
-            col = bp[0];
-            row = bp[1];
+    def updateBoard(self, colour):
+    	isWhite = True;
+    	if colour == 'white':
+    		isWhite = True;
+    	elif colour == 'black':
+    		isWhite = False;
 
-            left_right = [(col, row-1), (col, row+1)];
-            up_down = [(col-1, row), (col+1, row)];
+    	# board = copy.deepcopy(self.board);
+    	blackPieces = self.getPosOfChar('@');
+    	whitePieces = self.getPosOfChar('O');
+    	if isWhite:
+    		#eliminate black pieces
+    		for bp in blackPieces:
+    			col = bp[0];
+    			row = bp[1];
 
-            if left_right[0][1] >=0 and left_right[1][1] <= 7:
-                if (self.getChar(left_right[0]) == 'O' and self.getChar(left_right[1]) == 'O') or (self.getChar(left_right[0]) == 'O' and self.getChar(left_right[1]) == 'X') or (self.getChar(left_right[0]) == 'X' and self.getChar(left_right[1]) == 'O'):
-                    board[col][row] = '-';
-            if up_down[0][0] >= 0 and up_down[1][0] <= 7:
-                if (self.getChar(up_down[0]) == 'O' and self.getChar(up_down[1]) == 'O') or (self.getChar(up_down[0]) == 'O' and self.getChar(up_down[1]) == 'X') or ((self.getChar(up_down[0]) == 'X' and self.getChar(up_down[1]) == 'O')):
-                    board[col][row] = '-';
-        self.board = copy.deepcopy(board);
-        return;
+    			left_right = [(col, row-1), (col, row+1)];
+    			up_down = [(col-1, row), (col+1, row)];
+
+    			if left_right[0][1] >=0 and left_right[1][1] <= 7:
+    				if (self.getChar(left_right[0]) == 'O' and self.getChar(left_right[1]) == 'O') or (self.getChar(left_right[0]) == 'O' and self.getChar(left_right[1]) == 'X') or (self.getChar(left_right[0]) == 'X' and self.getChar(left_right[1]) == 'O'):
+    					self.board[col][row] = '-';
+    			if up_down[0][0] >= 0 and up_down[1][0] <= 7:
+    				if (self.getChar(up_down[0]) == 'O' and self.getChar(up_down[1]) == 'O') or (self.getChar(up_down[0]) == 'O' and self.getChar(up_down[1]) == 'X') or ((self.getChar(up_down[0]) == 'X' and self.getChar(up_down[1]) == 'O')):
+    					self.board[col][row] = '-';
+    		#eliminate white pieces 
+    		for wp in whitePieces:
+    			col = wp[0];
+    			row = wp[1];
+
+    			left_right = [(col, row-1), (col, row+1)];
+    			up_down = [(col-1, row), (col+1, row)];
+
+    			if left_right[0][1] >=0 and left_right[1][1] <= 7:
+    				if (self.getChar(left_right[0]) == '@' and self.getChar(left_right[1]) == '@') or (self.getChar(left_right[0]) == '@' and self.getChar(left_right[1]) == 'X') or (self.getChar(left_right[0]) == 'X' and self.getChar(left_right[1]) == '@'):
+    					self.board[col][row] = '-';
+    			if up_down[0][0] >= 0 and up_down[1][0] <= 7:
+    				if (self.getChar(up_down[0]) == '@' and self.getChar(up_down[1]) == '@') or (self.getChar(up_down[0]) == '@' and self.getChar(up_down[1]) == 'X') or ((self.getChar(up_down[0]) == 'X' and self.getChar(up_down[1]) == '@')):
+    					self.board[col][row] = '-';
+    	else:
+    		for wp in whitePieces:
+    			col = wp[0];
+    			row = wp[1];
+
+    			left_right = [(col, row-1), (col, row+1)];
+    			up_down = [(col-1, row), (col+1, row)];
+
+    			if left_right[0][1] >=0 and left_right[1][1] <= 7:
+    				if (self.getChar(left_right[0]) == '@' and self.getChar(left_right[1]) == '@') or (self.getChar(left_right[0]) == '@' and self.getChar(left_right[1]) == 'X') or (self.getChar(left_right[0]) == 'X' and self.getChar(left_right[1]) == '@'):
+    					self.board[col][row] = '-';
+    			if up_down[0][0] >= 0 and up_down[1][0] <= 7:
+    				if (self.getChar(up_down[0]) == '@' and self.getChar(up_down[1]) == '@') or (self.getChar(up_down[0]) == '@' and self.getChar(up_down[1]) == 'X') or ((self.getChar(up_down[0]) == 'X' and self.getChar(up_down[1]) == '@')):
+    					self.board[col][row] = '-';
+    		for bp in blackPieces:
+    			col = bp[0];
+    			row = bp[1];
+
+    			left_right = [(col, row-1), (col, row+1)];
+    			up_down = [(col-1, row), (col+1, row)];
+
+    			if left_right[0][1] >=0 and left_right[1][1] <= 7:
+    				if (self.getChar(left_right[0]) == 'O' and self.getChar(left_right[1]) == 'O') or (self.getChar(left_right[0]) == 'O' and self.getChar(left_right[1]) == 'X') or (self.getChar(left_right[0]) == 'X' and self.getChar(left_right[1]) == 'O'):
+    					self.board[col][row] = '-';
+    			if up_down[0][0] >= 0 and up_down[1][0] <= 7:
+    				if (self.getChar(up_down[0]) == 'O' and self.getChar(up_down[1]) == 'O') or (self.getChar(up_down[0]) == 'O' and self.getChar(up_down[1]) == 'X') or ((self.getChar(up_down[0]) == 'X' and self.getChar(up_down[1]) == 'O')):
+    					self.board[col][row] = '-';
+
+    		# self.board = copy.deepcopy(board);
+    	return;
 
     def placePiece(self, destination, colour):
     	if colour == 'white':
