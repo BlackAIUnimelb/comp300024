@@ -138,36 +138,42 @@ class Player():
 		return eliminateBlackPosition;
 
     #in placing phase, there are position where white pieces cannot place
-	def notAllowedPosition(self):
-		notAllowedPositionList = [];
-		#对白棋来说，最下面两行不可以place
-		for i in range(6, 8):
-			for j in range(0, 8):
-				notAllowedPositionList.append((j,i));
-		notAllowedPositionList.append((0, 0));
-		notAllowedPositionList.append((7 ,0));
+    def notAllowedPosition(self):
+        notAllowedPositionList = [];
+        #对白棋来说，最下面两行不可以place
+        for i in range(6, 8):
+            for j in range(0, 8):
+                notAllowedPositionList.append((j,i));
+        notAllowedPositionList.append((0, 0));
+        notAllowedPositionList.append((7 ,0));
 
-		blackPieces = self.ba.getPosOfChar('@');
+        blackPieces = self.ba.getPosOfChar('@');
 
-		#if there are black pieces on the board
-		if len(blackPieces) > 0:
-			for bp in blackPieces:
-				col = bp[0];
-				row = bp[1];
+        #if there are black pieces on the board
+        if len(blackPieces) > 0:
+            for bp in blackPieces:
+                col = bp[0];
+                row = bp[1];
+                notAllowedPositionList.append(bp);
 
-				#黑棋的4个方向
-				directDots = [(col+1, row), (col, row+1), (col-1, row), (col, row-1)];
-				nextDirectDots = [(col+2, row), (col, row+2), (col-2, row), (col, row-2)];
-				for i in range(0, 4):
-					#边界情况
-					if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
-						continue;
+                #黑棋的4个方向
+                directDots = [(col+1, row), (col, row+1), (col-1, row), (col, row-1)];
+                nextDirectDots = [(col+2, row), (col, row+2), (col-2, row), (col, row-2)];
+                for i in range(0, 4):
+                    #边界情况
+                    if (directDots[i][0] < 0 or directDots[i][0] > 7 or directDots[i][1] < 0 or directDots[i][1] > 7):
+                        continue;
 
-					if self.ba.getChar(directDots[i]) == '-' and self.ba.isInsideBoardRange(nextDirectDots[i]) and (self.ba.getChar(nextDirectDots[i]) == 'X' or self.ba.getChar(nextDirectDots[i]) == '@' or self.ba.getChar(nextDirectDots[i]) == '-'):
-						if directDots[i] not in notAllowedPositionList:
-							notAllowedPositionList.append(directDots[i]);
+                    if self.ba.getChar(directDots[i]) == '-' and self.ba.isInsideBoardRange(nextDirectDots[i]) and (self.ba.getChar(nextDirectDots[i]) == 'X' or self.ba.getChar(nextDirectDots[i]) == '@' or self.ba.getChar(nextDirectDots[i]) == '-'):
+                        if directDots[i] not in notAllowedPositionList:
+                            notAllowedPositionList.append(directDots[i]);
 
-		return notAllowedPositionList;
+        whitePieces = self.ba.getPosOfChar('O');
+        if len(whitePieces) > 0:
+            for wp in whitePieces:
+                notAllowedPositionList.append(wp);
+
+        return notAllowedPositionList;
 
 	#in placing phase, return the allowed positions for white pieces to place 
 	def allowedPositions(self):
