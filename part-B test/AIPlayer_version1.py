@@ -34,10 +34,12 @@ class Player():
 				opponentColour = 'black';
 			elif self.colour == 'black':
 				opponentColour = 'white';
-			if turns == 128 or turns == 129:
+
+			#对于白棋来说，先shrink board，再走
+			if turns == 128:
 				self.ba.first_shrink();
 				self.ba.updateBoard(opponentColour);
-			if turns == 192 or turns == 193:
+			if turns == 192:
 				self.ba.second_shrink();
 				self.ba.updateBoard(opponentColour);   #先后顺序？
 
@@ -55,6 +57,15 @@ class Player():
 			endpos = paction[1];
 			self.ba.makeMove(startpos, endpos);
 			self.ba.updateBoard(self.colour);
+
+
+			#对于黑棋来说, 走完以后 shrink board
+			if turns == 127:
+				self.ba.first_shrink();
+				self.ba.updateBoard(opponentColour);
+			if turns == 191:
+				self.ba.second_shrink();
+				self.ba.updateBoard(opponentColour); 
 
 			return paction;
 
@@ -610,7 +621,6 @@ class Node():
             	isWhite = False;
             	opponentColour = 'white';
 
-
             selfPieces = self.board.getPosOfChar(selfSymbol);         #return all white pieces positions 
             if len(selfPieces) == 0:
             	#判断剩余数量是否为 0
@@ -650,7 +660,7 @@ class Node():
 
 
     #evaluation function 
-    #start position is the position of the white piece
+    #
     def getValue(self, ba, value, depth, rootPlayer):
     	#对Player 来说 
     	#对MAX 来说
@@ -671,6 +681,9 @@ class Node():
     			selfSymbol = '@';
     			opponentSymbol = 'O';
 
+    		#feature 1: 
+    		#棋盘上剩余的 己方和敌方 棋子数
+    		#weight: 10 and -10
     		selfPieces = ba.getPosOfChar(selfSymbol);
     		if len(selfPieces) > 0:
     			selfPiecesLeft = len(selfPieces);
@@ -682,8 +695,16 @@ class Node():
     		if len(opponentPieces) > 0:
     			opponentPiecesLeft = len(opponentPieces);
     			#敌方的棋子剩的越少，value的值越大
-    			num_of_opponentPieces_weight = (-10) * opponentPiecesLeft;
+    			num_of_opponentPieces_weight = (-99) * opponentPiecesLeft;
     			pvalue += num_of_opponentPieces_weight;
+
+    		#feature 2:
+    		#棋子离棋盘中心的距离
+    		dist = 0
+    		for sp in selfPieces:
+    			dist += manhattanDistance(sp, (3,3))
+    		#距离越近，value 的值越大
+    		pvalue += (-1) * dist
 
     	return pvalue;
 
@@ -833,6 +854,7 @@ class BoardAnalyser():
     	# board = copy.deepcopy(self.board);
     	blackPieces = self.getPosOfChar('@');
     	whitePieces = self.getPosOfChar('O');
+
     	if isWhite:
     		#eliminate black pieces
     		for bp in blackPieces:
@@ -906,6 +928,8 @@ class BoardAnalyser():
     	self.board[1][6] = 'X';
     	self.board[6][6] = 'X';
 
+    	self.eliminate_when_shrink();
+
     def second_shrink(self):
     	for i in range(1, 7):
     		#最上行和最下行为空
@@ -918,6 +942,32 @@ class BoardAnalyser():
     	self.board[2][5] = 'X';
     	self.board[5][2] = 'X';
     	self.board[5][5] = 'X';
+
+    	self.eliminate_when_shrink();
+
+    def eliminate_when_shrink(self):
+    	#cornor elimination
+    	cornorPieces = []
+    	cornors = self.getPosOfChar('X');
+    	cornorPieces.append(cornors[0]);
+    	cornorPieces.append(cornors[1]);
+    	cornorPieces.append(cornors[3]);
+    	cornorPieces.append(cornors[2]);
+    	for cp in cornorPieces:
+    		col = cp[0]
+    		row = cp[1]
+
+    		directDots = [(col+1, row), (col, row+1), (col-1, row), (col, row-1)];
+    		nextDirectDots = [(col+2, row), (col, row+2), (col-2, row), (col, row-2)];
+    		for i in range(0,4):
+    			#边界情况
+    			if (self.isInsideBoardRange(directDots[i], 0) == False):
+    				continue;
+    			if self.getChar(directDots[i]) == 'O' and self.getChar(nextDirectDots[i]) == '@':
+    				self.board[directDots[i][0]][directDots[i][1]] = '-';
+    			if self.getChar(directDots[i]) == '@' and self.getChar(nextDirectDots[i]) == 'O':
+    				self.board[directDots[i][0]][directDots[i][1]] = '-';
+
 
     def placePiece(self, destination, colour):
     	if colour == 'white':
