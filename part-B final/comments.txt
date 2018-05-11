@@ -1,0 +1,52 @@
+BlackAI
+Team member: 
+	Chaoxinw Wu (Alan)
+	Xu Peng (Linus)
+
+
+1. Briefly describe the structure of your solution in terms of the major modules and classes you have created and used.
+	
+	In our solution, we have following major classes: 
+	a) 	Player class, for initialising the player and for playing the game
+
+	b) 	BoardAnalysis class, for storing the board configuration, updating the board, and getting positions of pieces from 
+		the borad. It is stored as an attribute in the Player class. 
+
+	c)	AlphaBeta class, for implementing the alpha beta prunning algorithm. It is the strategy we have used for playing the 
+		game. 
+
+	d)	Node class, for constructing a game tree and for creating a utility value (evaluation function).
+
+	Our solution: 
+		Firstly, when a player is initialised, an empty board is also created and stored in the player object. In placing phase, instead of using search techniques, we just used our own method. Specifically, a player would place a piece according to the board state. If an opponent piece can be eliminated, then the player would make the action. If one of the player's pieces is about to be elimiated, the player should play defense. If nothing metioned happens, then the player would just play randomly. 
+
+		Secondly, in moving phase, we used alpha beta prunning. The depth we chose is 3. The player would choose the move given by this algorithm. 
+
+
+2. Describe the approach taken by your game playing program for deciding on which actions to take, in terms of
+	o your search strategy,
+	o your evaluation function, and
+	o any creative techniques that you have applied, for example, machine learning, search strategy optimisations, specialised data structures, other optimisations, or any search algorithms not discussed in the lectures. 
+
+	Search stretegy: 
+		Since we only used seach algorithm in moving phase, when deciding which move to make, we fisrtly make the current board state as the root node of a game tree. From there, we used alpha beta prunning. The depth is 3 so the player would only look ahead 3 steps in the future. And when the game tree goes to the end node, a utility value is given by getValue() function in Node class. The search algorithm would pick the best move according to this utility value. 
+
+	Evaluation function: 
+		The evalution function is only used in moving phase. When it is in moving phase, and the game tree goes to its end nodes, the board state at the end nodes would be evaluated, in the following way: 
+			a) Feature1: 
+				The number of player's pieces and the number of opponent's pieces
+				The more the number of player's pieces is, the bigger the value becomes. (weight = 10)
+				The more the number of opponent's pieces is, the less the value becomes. (weight = -99)
+
+				For this feature, the value is calculated as 
+				value += selfPiecesNum * 10 + opponentPiecesNum * (-99)
+
+			b) Feature2:
+				The distance from each player's piece to the center of the board. 
+				The closer the pieces to the center is, the bigger the value becomes. (weight = -1)
+
+				For this feature, the value is calculated as
+				value += distance * (-1)
+
+
+
